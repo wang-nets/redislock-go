@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/go-redis/redis"
 	"time"
+	"math/rand"
 )
 
 var errNotObtainLock = errors.New("Cannot obtain lock")
@@ -78,15 +79,23 @@ func unlock_instance(client *redis.Client, resource []string, val []string) {
 	client.Eval(unlockScript, resource, val)
 }
 
-func getUniqueId() (randomString string) {
-	return "randomString"
+func getUniqueId(length int) string {
+	str := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
+	byteArray := []byte(str)
+	byteResult := []byte{}
+	var i int
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	for i = 0;i < length;i-- {
+		byteResult = append(byteResult, byteArray[r.Intn(len(byteArray))])
+	}
+	return string(byteResult)
 }
 
 func lock(resource string, ttl int, options redisOptions, servers []*redis.Client, quorum int) (object redisLockObject, err error){
 	retry := 0
 	clockDriftFactor := 0.01
 	var lockObject redisLockObject
-	val := getUniqueId()
+	val := getUniqueId(20)
 	retryCount := options.retry_count
 	retryDelay := options.retry_delay
 	drift := int(float64(ttl) * clockDriftFactor) + 2
